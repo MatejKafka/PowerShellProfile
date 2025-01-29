@@ -2,8 +2,9 @@
 
 Set-StrictMode -Version Latest
 
-# only load the full profile on Windows when explicitly requested or running inside one of specific terminals
-# change this if you want the profile to load in other terminals
+# do not load the profile when running from conhost.exe; however, I did not find a good way to detect conhost specifically,
+#  especially since some terminal emulators use it internally, since conpty is still pretty young, so I instead I special-case
+#  everything else I'm using; change this if you want the profile to load in other terminals
 if (-not $IsWindows `
 		-or [Environment]::GetEnvironmentVariable("PS_FULL_PROFILE") <# manual override #> `
 		-or [Environment]::GetEnvironmentVariable("WT_SESSION") <# Windows Terminal #> `

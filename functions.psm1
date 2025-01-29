@@ -609,6 +609,26 @@ function Get-ModuleHelp($Name) {
 	(Get-Module $Name).ExportedCommands.GetEnumerator() | % Value | Get-Help | select Name, Synopsis
 }
 
+function index($Pattern = "*", [switch]$Exact) {
+	if (-not $Exact) {
+		$Pattern = "*$Pattern*"
+	}
+    $Pattern = $Pattern -replace "\*", "%"
+
+    $Connection = New-Object -ComObject ADODB.Connection
+    $RecordSet = New-Object -ComObject ADODB.Recordset
+
+    $Connection.Open("Provider=Search.CollatorDSO;Extended Properties='Application=Windows';")
+    $RecordSet.Open("SELECT System.ItemPathDisplay FROM SYSTEMINDEX WHERE System.FileName LIKE '" + $Pattern + "'", $Connection)
+
+    $Output = while (-not $RecordSet.EOF) {
+        $RecordSet.Fields.Item("System.ItemPathDisplay").Value
+        $RecordSet.MoveNext()
+    }
+
+    $Output | sort
+}
+
 
 $NotebookPath = Get-PSDataPath "Notebook.txt"
 function Get-Notebook {
