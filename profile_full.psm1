@@ -19,7 +19,7 @@ $env:PSModulePath = @(
 	$env:PSModulePath
 	"$PSScriptRoot\CustomModules"
 	"$PSScriptRoot\UnmaintainedModules"
-	"$PSScriptRoot\ZLocation" # custom ZLocation fork
+	"$PSScriptRoot\ZLocation2"
 ) -join [IO.Path]::PathSeparator
 
 
@@ -35,8 +35,8 @@ if ($IsWindows) {
 
 # set path where command history is saved
 Set-PSReadLineOption -HistorySavePath (Get-PSDataPath "ConsoleHost_history.txt")
-# set database path for ZLocation
-$env:PS_ZLOCATION_DATABASE_PATH = Get-PSDataPath "z-location.db" -NoCreate
+# set database path for ZLocation2
+$env:ZLOCATION_DATABASE_PATH = Get-PSDataPath "z-location2.db" -NoCreate
 
 # set env:LANG, which makes `git diff` and other originally Linux commands print stuff with correct encoding
 $env:LANG = "C.UTF-8"
@@ -62,7 +62,7 @@ Register-EngineEvent PowerShell.OnIdle -MaxTriggerCount 1 -Action {
 	# setup ZLocation (my fork with some change)
 	# if user types `z` immediately after prompt loads, this will not be loaded yet,
 	#  so he'll have to wait for a bit, but the command will still work
-	Import-ModuleDelayed ZLocation
+	Import-ModuleDelayed ZLocation2
 	
 	# random argument completers, too many to list in functions_completers.psm1
 	Import-ModuleDelayed ArgumentCompleters

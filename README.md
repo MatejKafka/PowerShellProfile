@@ -15,6 +15,9 @@ $ConfigDir = Split-Path $PROFILE
 git clone --recursive https://github.com/MatejKafka/powershell-profile $ConfigDir
 cd $ConfigDir
 
+# install ZLocation
+Install-Module ZLocation2
+
 # if you want more autocompletions, also install these modules
 Install-Module PSGitCompletions
 Install-Module WSLTabCompletion
@@ -29,6 +32,9 @@ cd powershell-profile
 
 # symlink this directory from $PROFILE directory (default profile file path)
 New-Item -Type SymbolicLink (Split-Path $PROFILE) -Target (pwd)
+
+# install ZLocation
+Install-Module ZLocation2
 
 # if you want more autocompletions, also install these modules
 Install-Module PSGitCompletions
