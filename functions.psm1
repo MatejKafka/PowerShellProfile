@@ -638,4 +638,21 @@ function notes {
 	Open-TextFile $NotebookPath
 }
 
+function since($i = 0) {
+	$LastCmd = Get-History -Count ($i + 1) | select -First 1
+	Write-Host "Command '$($LastCmd.CommandLine)' finished $(Format-TimeSpan ((Get-Date) - $LastCmd.EndExecutionTime)) ago."
+}
+
+function CombineOutput($Sb) {
+    & $Sb @Args 2>&1 | ForEach-Object {
+        # by default, ErrorRecords (everything from stderr) are printed in red,
+        #  remove them so that we get the original colors
+        if ($_ -is [System.Management.Automation.ErrorRecord]) {
+            $_.Exception.Message
+        } else {
+            $_
+        }
+    }
+}
+
 Export-ModuleMember -Function * -Cmdlet * -Alias *

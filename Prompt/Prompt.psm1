@@ -270,7 +270,7 @@ function global:Prompt {
 	$global:Types = $script:_LastCmdOutputTypes.ToArray()
 	$script:_LastCmdOutputTypes.Clear()
 
-	return "> "
+	return ">" * ($NestedPromptLevel + 1) + " "
 }
 
 

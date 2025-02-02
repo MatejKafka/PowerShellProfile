@@ -49,10 +49,17 @@ Set-PSReadLineKeyHandler -Key "Shift+Tab" -ScriptBlock {
 	$line = $null
 	$cursor = $null
 	[PSConsoleReadLine]::GetBufferState([ref]$line, [ref]$cursor)
+	# $selectionStart = $null
+	# $selectionLength = $null
+	# [PSConsoleReadLine]::GetSelectionState([ref]$selectionStart, [ref]$selectionLength)
 
 	$lineStartI = $line.LastIndexOf("`n", [Math]::max(0, $cursor - 1)) + 1
+	for ($i = $lineStartI; $i -lt $line.length -and [char]::IsWhiteSpace($line[$i]); $i++) {}
+	$whitespaceEndI = $i
+
 	if ($line.Substring($lineStartI, $cursor - $lineStartI).Trim() -eq "") {
-		[PSConsoleReadLine]::Delete($lineStartI, $cursor - $lineStartI)
+		$deleteStartI = [math]::Max($lineStartI, $whitespaceEndI - 4)
+		[PSConsoleReadLine]::Delete($deleteStartI, $whitespaceEndI - $deleteStartI)
 	} else {
 		[PSConsoleReadLine]::TabCompletePrevious($key, $arg)
 	}
