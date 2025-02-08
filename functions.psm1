@@ -613,20 +613,20 @@ function index($Pattern = "*", [switch]$Exact) {
 	if (-not $Exact) {
 		$Pattern = "*$Pattern*"
 	}
-    $Pattern = $Pattern -replace "\*", "%"
+	$Pattern = $Pattern -replace "\*", "%"
 
-    $Connection = New-Object -ComObject ADODB.Connection
-    $RecordSet = New-Object -ComObject ADODB.Recordset
+	$Connection = New-Object -ComObject ADODB.Connection
+	$RecordSet = New-Object -ComObject ADODB.Recordset
 
-    $Connection.Open("Provider=Search.CollatorDSO;Extended Properties='Application=Windows';")
-    $RecordSet.Open("SELECT System.ItemPathDisplay FROM SYSTEMINDEX WHERE System.FileName LIKE '" + $Pattern + "'", $Connection)
+	$Connection.Open("Provider=Search.CollatorDSO;Extended Properties='Application=Windows';")
+	$RecordSet.Open("SELECT System.ItemPathDisplay FROM SYSTEMINDEX WHERE System.FileName LIKE '" + $Pattern + "'", $Connection)
 
-    $Output = while (-not $RecordSet.EOF) {
-        $RecordSet.Fields.Item("System.ItemPathDisplay").Value
-        $RecordSet.MoveNext()
-    }
+	$Output = while (-not $RecordSet.EOF) {
+		$RecordSet.Fields.Item("System.ItemPathDisplay").Value
+		$RecordSet.MoveNext()
+	}
 
-    $Output | sort
+	$Output | sort
 }
 
 
@@ -644,15 +644,26 @@ function since($i = 0) {
 }
 
 function CombineOutput($Sb) {
-    & $Sb @Args 2>&1 | ForEach-Object {
-        # by default, ErrorRecords (everything from stderr) are printed in red,
-        #  remove them so that we get the original colors
-        if ($_ -is [System.Management.Automation.ErrorRecord]) {
-            $_.Exception.Message
-        } else {
-            $_
-        }
-    }
+	& $Sb @Args 2>&1 | ForEach-Object {
+		# by default, ErrorRecords (everything from stderr) are printed in red,
+		#  remove them so that we get the original colors
+		if ($_ -is [System.Management.Automation.ErrorRecord]) {
+			$_.Exception.Message
+		} else {
+			$_
+		}
+	}
+}
+
+function Invoke-AlternateScreen($Sb) {
+	$Host.UI.Write([char]27 + "[?1049h")
+	$Output = try {
+		$Host.UI.RawUI.CursorPosition = [System.Management.Automation.Host.Coordinates]::new(0, 0)
+		& $Sb
+	} finally {
+		$Host.ui.Write([char]27 + "[?1049l")
+	}
+	return $Output
 }
 
 Export-ModuleMember -Function * -Cmdlet * -Alias *
