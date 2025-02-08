@@ -1,4 +1,11 @@
-<# Entry point to my profile, automatically loaded by pwsh on startup. #>
+### Entry point to my profile, automatically loaded by pwsh on startup.
+
+# when pwsh is invoked with -File, -Command,... (scripted invocation), PSReadLine is not loaded in the InitialSessionState;
+#  since the argv parser is not exposed from the engine, this is the simplest option I found to detect script invocations
+if (-not [runspace]::DefaultRunspace.InitialSessionState.Modules) {
+	# do not load anything when invoking a script (essentially emulate an implicit -NoProfile)
+	return
+}
 
 Set-StrictMode -Version Latest
 
