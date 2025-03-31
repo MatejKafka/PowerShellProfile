@@ -32,7 +32,7 @@ Set-PSReadLineKeyHandler -Chord Enter {
     [Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState([ref]$Ast, [ref]$null, [ref]$null, [ref]$null)
     $Ast.FindAll({param($Node) $Node -is [System.Management.Automation.Language.CommandAst]}, $true) `
         | % {$_.CommandElements[0]} `
-        | ? StringConstantType -eq BareWord `
+        | ? StringConstantType -eq BareWord -ErrorAction Ignore `
         | % {
             $CorrectCasing = Get-Command $_.Value -ErrorAction Ignore | ? CommandType -ne ExternalScript | % Name
             if (-not $CorrectCasing) {return}
@@ -40,6 +40,13 @@ Set-PSReadLineKeyHandler -Chord Enter {
             if ($CorrectCasing -like "*.exe" -and $_.Value -notlike "*.exe") {
                 # .exe is added for native applications by Get-Command
                 $CorrectCasing = $CorrectCasing.Substring(0, $CorrectCasing.Length - 4)
+            }
+
+            if ($CorrectCasing -ne $_.Value) {
+                # case correction changed the value, skip
+                # this currently happens for relative paths to scripts
+                # TODO: fix this properly
+                return
             }
 
             if ($CorrectCasing -cne $_.Value) {
