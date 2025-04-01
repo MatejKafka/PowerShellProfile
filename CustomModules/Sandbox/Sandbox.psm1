@@ -107,8 +107,12 @@ function Invoke-Sandbox {
         $Config = New-SandboxConfig $MappedFolder $ProcessedLogonCommand $MemoryInMB $PSBoundParameters
         $Config.Save("$ConfigDir\config.wsb")
 
-        Start-Process WindowsSandbox -ArgumentList "$ConfigDir\config.wsb" -Wait
+        Write-Verbose "Config file: $ConfigDir\config.wsb"
+        cat "$ConfigDir\config.wsb" | Write-Verbose
+
+        $Cmd = gcm WindowsSandboxRemoteSession.exe, WindowsSandbox.exe -ErrorAction Ignore | select -First 1
+        & $Cmd "$ConfigDir\config.wsb" | Out-Default
     } finally {
-        rm -Force -ErrorAction Ignore "$ConfigDir\config.wsb"
+        rm -Force -Recurse -ErrorAction Ignore $ConfigDir
     }
 }
