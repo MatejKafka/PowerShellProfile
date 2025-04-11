@@ -53,14 +53,19 @@ function Get-ConciseTypeName {
 		$Name = $Matches[1]
 	}
 
-	if ($null -ne $Type.Namespace) {
-		$Name = $Type.Namespace + "." + $Name
-	}
+	if ($Type.ReflectedType) {
+		# nested type
+		$Name = (Get-ConciseTypeName $Type.ReflectedType) + "+" + $Name
+	} else {
+		if ($Type.Namespace) {
+			$Name = $Type.Namespace + "." + $Name
+		}
 
-	$Name = $ConciseTypeMap[$Name] ?? $Name
+		$Name = $ConciseTypeMap[$Name] ?? $Name
 
-	if ($StripSystem -and $Name.StartsWith("System.")) {
-		$Name = $Name.Substring(7)
+		if ($StripSystem -and $Name.StartsWith("System.")) {
+			$Name = $Name.Substring(7)
+		}
 	}
 
 	if ($Type.GenericTypeArguments.Count -gt 0) {
