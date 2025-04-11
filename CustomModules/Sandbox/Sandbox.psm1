@@ -54,7 +54,7 @@ function New-SandboxConfig {
 
     $mfs = foreach ($f in $MappedFolder) {
         x MappedFolder `
-            (x HostFolder $f.HostFolder) `
+            (x HostFolder (Resolve-Path $f.HostFolder)) `
             (x SandboxFolder $f.SandboxFolder) `
             (x ReadOnly $(if ($f.ReadOnly) {"true"} else {"false"}))
     }
@@ -113,6 +113,6 @@ function Invoke-Sandbox {
         $Cmd = gcm WindowsSandboxRemoteSession.exe, WindowsSandbox.exe -ErrorAction Ignore | select -First 1
         & $Cmd "$ConfigDir\config.wsb" | Out-Default
     } finally {
-        rm -Force -Recurse -ErrorAction Ignore $ConfigDir
+        rm $ConfigDir -Force -Recurse -ErrorAction Ignore
     }
 }
