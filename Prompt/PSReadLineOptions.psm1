@@ -5,7 +5,8 @@ Export-ModuleMember # don't export anything
 
 Set-PSReadLineKeyHandler -Key Shift+UpArrow -Function HistorySearchBackward
 Set-PSReadLineKeyHandler -Key Shift+DownArrow -Function HistorySearchForward
-Set-PSReadLineKeyHandler -Key Enter -Function ValidateAndAcceptLine
+# bypass custom Enter handling below
+Set-PSReadLineKeyHandler -Key Alt+Enter -Function AcceptLine
 
 Set-PSReadLineOption -HistorySearchCursorMovesToEnd
 # disable default history handler, which filters "sensitive" commands from being written to the history file
@@ -30,29 +31,11 @@ Set-PSReadLineOption -Colors @{ InlinePrediction = '#555555'}
 Set-PSReadLineKeyHandler -Chord Enter {
     $Ast = $null
     [Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState([ref]$Ast, [ref]$null, [ref]$null, [ref]$null)
-    $Ast.FindAll({param($Node) $Node -is [System.Management.Automation.Language.CommandAst]}, $true) `
-        | % {$_.CommandElements[0]} `
-        | ? StringConstantType -eq BareWord -ErrorAction Ignore `
-        | % {
-            $CorrectCasing = Get-Command $_.Value -ErrorAction Ignore | ? CommandType -ne ExternalScript | % Name
-            if (-not $CorrectCasing) {return}
 
-            if ($CorrectCasing -like "*.exe" -and $_.Value -notlike "*.exe") {
-                # .exe is added for native applications by Get-Command
-                $CorrectCasing = $CorrectCasing.Substring(0, $CorrectCasing.Length - 4)
-            }
-
-            if ($CorrectCasing -ne $_.Value) {
-                # case correction changed the value, skip
-                # this currently happens for relative paths to scripts
-                # TODO: fix this properly
-                return
-            }
-
-            if ($CorrectCasing -cne $_.Value) {
-                [Microsoft.PowerShell.PSConsoleReadLine]::Replace($_.Extent.StartOffset, $_.Extent.EndOffset - $_.Extent.StartOffset, $CorrectCasing)
-            }
-        }
+    # defined in functions.psm1
+    FixCommandCasing $Ast | % {
+        [Microsoft.PowerShell.PSConsoleReadLine]::Replace($_.Extent.StartOffset, $_.Extent.EndOffset - $_.Extent.StartOffset, $_.Replacement)
+    }
     [Microsoft.PowerShell.PSConsoleReadLine]::ValidateAndAcceptLine()
 }
 

@@ -666,4 +666,47 @@ function Invoke-AlternateScreen($Sb) {
 	return $Output
 }
 
+# used from PSReadLineOptions.psm1 "Enter" handler
+function FixCommandCasing($Ast) {
+	if ($Ast -is [scriptblock]) {
+		$Ast = $Ast.Ast
+	}
+
+	$Ast.FindAll({param($Node) $Node -is [System.Management.Automation.Language.CommandAst]}, $true) `
+		| % {$_.CommandElements[0]} `
+		| ? StringConstantType -eq BareWord -ErrorAction Ignore `
+		| ? Value -notin "ping", "ping.exe" `
+		| % {
+			$Cmd = Get-Command $_.Value -ErrorAction Ignore
+			if (-not $Cmd) {return}
+
+			# probably not 100% right, but hopefully close enough
+			$IsPath = $Cmd.CommandType -in "Application", "ExternalScript" -and ($_.Value.Contains("/") -or $_.Value.Contains("\"))
+
+			if ($IsPath) {
+				# resolve relative paths to absolute paths, with correct casing
+				$CorrectCasing = $Cmd.Source
+			} else {
+				# for command names in PATH/modules, just fix casing
+				$CorrectCasing = $Cmd.Name
+
+				foreach ($Ext in ".exe", ".ps1") {
+					if ($CorrectCasing -like "*$Ext" -and $_.Value -notlike "*$Ext") {
+						# .exe/.ps1 is added for native applications/scripts by Get-Command, remove it
+						$CorrectCasing = $CorrectCasing.Substring(0, $CorrectCasing.Length - $Ext.Length)
+						break
+					}
+				}
+			}
+
+			if ($CorrectCasing -cne $_.Value) {
+				return [pscustomobject]@{
+					Extent = $_.Extent
+					Value = $_.Value
+					Replacement = $CorrectCasing
+				}
+			}
+		}
+}
+
 Export-ModuleMember -Function * -Cmdlet * -Alias *
