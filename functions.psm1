@@ -677,7 +677,8 @@ function FixCommandCasing($Ast) {
 		| ? StringConstantType -eq BareWord -ErrorAction Ignore `
 		| ? Value -notin "ping", "ping.exe" `
 		| % {
-			$Cmd = Get-Command $_.Value -ErrorAction Ignore
+			# Get-Command does not have any way to pass "literal string" without interpreting wildcards
+			$Cmd = Get-Command ([WildcardPattern]::Escape($_.Value)) -ErrorAction Ignore
 			if (-not $Cmd) {return}
 
 			# probably not 100% right, but hopefully close enough
@@ -686,6 +687,10 @@ function FixCommandCasing($Ast) {
 			if ($IsPath) {
 				# resolve relative paths to absolute paths, with correct casing
 				$CorrectCasing = $Cmd.Source
+				if ($CorrectCasing -notmatch '^[\p{L}0-9_/\\:-]+$') {
+					# possibly needs quoting (the pattern is probably not entirely correct)
+					$CorrectCasing = "& '" + $Cmd.Source.Replace("'", "''") + "'"
+				}
 			} else {
 				# for command names in PATH/modules, just fix casing
 				$CorrectCasing = $Cmd.Name
