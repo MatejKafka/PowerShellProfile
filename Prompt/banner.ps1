@@ -7,5 +7,5 @@ Write-HostColor ("PowerShell v" + [string]$PSVersionTable.GitCommitId) `
 $NotebookStr = Get-Notebook
 if (-not [string]::IsNullOrWhitespace($NotebookStr)) {
 	Write-HostColor ""
-	Write-HostColor $NotebookStr -ForegroundColor $UIColors.Notebook
+	Write-HostColor $NotebookStr -NoNewline -ForegroundColor $UIColors.Notebook
 }

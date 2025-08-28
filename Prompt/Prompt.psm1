@@ -213,7 +213,8 @@ function PrintSeparatorAndStatus($StatusStr, $Color, $StatusColor) {
 }
 
 function global:Prompt {
-	$ErrorOccurred = -not ($? -and ($global:LastExitCode -eq 0))
+	# capture these two before we do anything else
+	$ErrorOccurred = -not $?
 	$ExitCode = $global:LastExitCode
 
 	$Colors = $ErrorOccurred ? $UIColors.Prompt.Error : $UIColors.Prompt.Ok

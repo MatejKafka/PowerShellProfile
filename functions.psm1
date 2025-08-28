@@ -45,53 +45,29 @@ function rme {
 	rm -Recurse -Force $wd
 }
 
-function rmf {
-	rm -Recurse -Force @Args -ErrorAction Ignore
+function rmf($Path) {
+	if (Test-Path $Path) {
+		rm -Recurse -Force $Path @Args
+	}
 }
 
 function touch {
 	(gi @Args).LastWriteTime = Get-Date
 }
 
-function gits {
-	git status @Args
-}
-function gitd {
-	git diff @Args
-}
-function gitdc {
-	git diff --cached @Args
-}
-function gitl {
-	git log @Args
-}
-function gitp {
-	git push @Args
-}
-function gitpf {
-	git push --force
-}
-function gitri {
-	$HasChanges = git status --porcelain
-	if ($HasChanges) {
-		git add -A
-		git stash
-	}
+function gits {git status @Args}
+function gita {git add @Args}
+function gitd {git diff @Args}
+function gitdc {git diff --cached @Args}
+function gitl {git log @Args}
+function gitp {git push @Args}
+function gitpf {git push --force}
 
-	try {
-		git rebase -i @Args
-	} finally {
-		if ($HasChanges) {
-			$GitDir = git rev-parse --git-dir
-			if (Test-Path $GitDir\rebase-merge) {
-				# on-going merge
-				Write-Warning "Restore working tree changes when rebase is finished."
-			} else {
-				git stash pop
-				git reset
-			}
-		}
+function gitri($Commit) {
+	if (-not $Commit) {
+		$Commit = git merge-base "HEAD@{u}" "HEAD"
 	}
+	git rebase --autostash -i $Commit
 }
 
 
@@ -336,6 +312,12 @@ function Get-SleepEvent {
 		| select TimeCreated, Message -First 30
 }
 
+function Get-LockEvent {
+	Get-WinEvent Security -FilterXPath "*[System[EventID=4800 or EventID=4801]]" | % {
+		[pscustomobject]@{Time = $_.TimeCreated; Type = $_.Id -eq 4800 ? "Locked" : "Unlocked"}
+	}
+}
+
 class _CwdLnkShortcuts : System.Management.Automation.IValidateSetValuesGenerator {
 	[string[]] GetValidValues() {
 		return ls -File -Filter "./*.lnk" | Select-Object -ExpandProperty Name
@@ -353,21 +335,23 @@ function lnk {
 	cd -LiteralPath $Lnk.TargetPath
 }
 
-class _WifiNames : System.Management.Automation.IValidateSetValuesGenerator {
-	[String[]] GetValidValues() {
-		return Get-WiFiProfile | % ProfileName
+if (Get-Command Get-WiFiProfile -ErrorAction Ignore) {
+	class _WifiNames : System.Management.Automation.IValidateSetValuesGenerator {
+		[String[]] GetValidValues() {
+			return Get-WiFiProfile | % ProfileName
+		}
+	}
+
+	function Get-Wifi {
+		[Alias("wifi")]
+		param(
+				[ValidateSet([_WifiNames])]
+				[string]
+			$Name
+		)
+		return Get-WifiProfile -ClearKey $Name
 	}
 }
-
-function Get-Wifi {
-	param(
-			[ValidateSet([_WifiNames])]
-			[string]
-		$Name
-	)
-	return Get-WifiProfile -ClearKey $Name
-}
-Set-Alias wifi Get-Wifi
 
 function Push-ExternalLocation {
 	[array]$Dirs = Get-FileManagerDirectory
@@ -712,6 +696,44 @@ function FixCommandCasing($Ast) {
 				}
 			}
 		}
+}
+
+function Get-ScheduledTaskLastRun([timespan]$MaxAge = [timespan]::FromMinutes(15)) {
+	Get-ScheduledTask | Get-ScheduledTaskInfo | ? {(Get-Date) - $_.LastRunTime -lt $MaxAge} | sort LastRunTime | select LastRunTime, TaskName
+}
+
+function CommandLineToArgv($Cmd) {
+    if (-not $(try {[Win32CommandLineToArgv]} catch {})) {
+        Add-Type -CompilerOptions /unsafe @'
+using System;
+using System.Text;
+using System.Runtime.InteropServices;
+
+public static partial class Win32CommandLineToArgv {
+    [DllImport("shell32.dll")]
+    private static unsafe extern char** CommandLineToArgvW([MarshalAs(UnmanagedType.LPWStr)] string lpCmdLine, out int pNumArgs);
+
+    public static unsafe string[] CommandLineToArgv(string lpCmdLine) {
+        lpCmdLine = lpCmdLine.Trim();
+        if (lpCmdLine == "") {
+            return [];
+        }
+
+        var ptr = CommandLineToArgvW(lpCmdLine, out var count);
+        if (ptr == null) {
+            return null;
+        }
+
+        var argv = new string[count];
+        for (var i = 0; i < count; i++) {
+            argv[i] = new string(ptr[i]);
+        }
+        return argv;
+    }
+}
+'@
+    }
+    return [Win32CommandLineToArgv]::CommandLineToArgv($Cmd)
 }
 
 Export-ModuleMember -Function * -Cmdlet * -Alias *
