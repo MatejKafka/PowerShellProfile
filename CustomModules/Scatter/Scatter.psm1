@@ -11,7 +11,8 @@ function Out-ScatterPlot {
 		[string]$LabelY,
 		[switch]$Line,
 		[switch]$NoPoint,
-		[switch]$YFromZero
+		[switch]$YFromZero,
+		[switch]$NoLegend
 	)
 
 	begin {
@@ -23,6 +24,7 @@ function Out-ScatterPlot {
 		if ($Line) {$Args += @("-l")}
 		if ($NoPoint) {$Args += @("-p")}
 		if ($YFromZero) {$Args += @("-0")}
+		if ($NoLegend) {$Args += @("-L")}
 
 	    # forward input to the Python script
 	    $Pipeline = {python $PSScriptRoot/scatter.py @Args}.GetSteppablePipeline($myInvocation.CommandOrigin)

@@ -18,11 +18,10 @@ if (-not $IsWindows `
 		-or [Environment]::GetEnvironmentVariable("TERMINAL_EMULATOR") -eq "JetBrains-JediTerm" <# JetBrains IDE terminal #> `
 		) {
 	# the $PROFILE directory is symlinked to the repo in my configuration, resolve the real target
-	#  (.ResolvedTarget was added in v7.3.0-preview.2)
-	Import-Module -DisableNameChecking "$((Get-Item $PSScriptRoot).ResolvedTarget)\profile_full"
+	Import-Module -DisableNameChecking "$((Get-Item $PSScriptRoot).ResolveLinkTarget($true))\profile_full"
 } else {
 	# function to load the full profile manually, if needed
 	function full-profile {
-		Import-Module -DisableNameChecking "$((Get-Item $PSScriptRoot).ResolvedTarget)\profile_full"
+		Import-Module -DisableNameChecking "$((Get-Item $PSScriptRoot).ResolveLinkTarget($true)))\profile_full"
 	}
 }

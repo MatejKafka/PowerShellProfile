@@ -31,7 +31,7 @@ $script:FirstPromptTime = $null
 
 
 function Get-StartupTimeStatusString {
-	if ($script:FirstPromptTime -eq $null) {
+	if (-not $script:FirstPromptTime) {
 		$script:FirstPromptTime = Get-Date
 		$script:Times.rest = $script:FirstPromptTime
 	}
@@ -224,10 +224,12 @@ function global:Prompt {
 
 	# render status string
 	$StatusStr, $VTMarkStr = BuildStatusStr $ErrorOccurred $ExitCode $script:_LastCmdOutputTypes
-	$CwdString = $ExecutionContext.SessionState.Path.CurrentLocation.Path
-	if ($CwdString -like "Microsoft.PowerShell.Core\FileSystem::*") {
+
+	$CwdString = if ($null -eq $PWD.Drive -and $PWD.Provider.Name -eq "FileSystem") {
 		# this happens e.g. after `gi dir | cd`
-		$CwdString = $ExecutionContext.SessionState.Path.CurrentLocation.ProviderPath
+		$PWD.ProviderPath
+	} else {
+		$PWD.Path
 	}
 
 	# VT mark: prompt started

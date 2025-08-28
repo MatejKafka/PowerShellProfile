@@ -42,7 +42,12 @@ function mke($Path) {
 function rme {
 	$wd = Get-Location
 	cd ..
-	rm -Recurse -Force $wd
+	try {
+		rm -Recurse -Force $wd
+	} catch {
+		cd $wd
+		throw
+	}
 }
 
 function rmf($Path) {
@@ -138,6 +143,22 @@ function findo($Pattern, $Path = ".", $Context = 0, [switch]$CaseSensitive, [swi
 	find $Pattern $Path $Context -CaseSensitive:$CaseSensitive
 		| Read-HostListChoice -FormatSb {$_.ToEmphasizedString($Path)}
 		| % {o $_.Path $_.LineNumber -Gui:$Gui}
+}
+
+function reflect-all {
+	[CmdletBinding()]
+	param(
+			[Parameter(Mandatory)]
+		$Object
+	)
+
+	$Object.GetType().GetMembers([System.Reflection.BindingFlags]"NonPublic,Public,Instance") | % {
+		[pscustomobject]@{
+			MemberType = $_.MemberType
+			Name = $_.Name
+			Value = $_ -is [System.Reflection.MethodBase] ? $_.ToString() : $_.GetValue($Object)
+		}
+	}
 }
 
 function reflect {
@@ -243,9 +264,8 @@ function s {
 }
 
 # source: https://github.com/sethvs/sthArgumentCompleter/blob/master/sthArgumentCompleterFunctions.ps1
-function Get-ArgumentCompleter
-{
-	Param (
+function Get-ArgumentCompleter {
+	param(
 		[switch]$Native,
 		[switch]$Custom
 	)
@@ -255,14 +275,14 @@ function Get-ArgumentCompleter
 		$Custom = $true
 	}
 
-	$flags = [System.Reflection.BindingFlags]'Instance,NonPublic'
-	$_context = $ExecutionContext.GetType().GetField('_context',$flags).GetValue($ExecutionContext)
+	$Flags = [System.Reflection.BindingFlags]'Instance,NonPublic'
+	$Context = $ExecutionContext.GetType().GetField('_context', $Flags).GetValue($ExecutionContext)
 
 	if ($Custom) {
-		$_context.GetType().GetProperty('CustomArgumentCompleters',$flags).GetValue($_context)
+		$Context.GetType().GetProperty('CustomArgumentCompleters', $Flags).GetValue($Context)
 	}
 	if ($Native) {
-		$_context.GetType().GetProperty('NativeArgumentCompleters',$flags).GetValue($_context)
+		$Context.GetType().GetProperty('NativeArgumentCompleters', $Flags).GetValue($Context)
 	}
 }
 
@@ -284,7 +304,7 @@ function w {
 	wsl -- @WslArgs
 }
 
-function wcmake([ValidateSet("Release", "Debug", "RelWithDebInfo", "MinSizeRel")][string]$BuildType = "Release", [switch]$Clang, [switch]$Verbose, [switch]$Force) {
+function wcmake([ValidateSet("Release", "Debug", "RelWithDebInfo", "MinSizeRel")][string]$BuildType = "Release", [switch]$Clang, [switch]$Verbose, [switch]$Force, $Target) {
 	$BuildDir = "cmake-build-$($BuildType.ToLowerInvariant())$(if ($Clang) {"-clang"})"
 
 	if ($Force -and (Test-Path $BuildDir)) {
@@ -293,12 +313,14 @@ function wcmake([ValidateSet("Release", "Debug", "RelWithDebInfo", "MinSizeRel")
 
 	$Args = if ($Clang) {@("-DCMAKE_C_COMPILER=clang", "-DCMAKE_CXX_COMPILER=clang++")} else {@()}
 
+	$TargetArgs = if ($Target) {@("--target", $Target)} else {@()}
+
 	if (-not (Test-Path $BuildDir)) {
 		echo "cmake -S . -B $BuildDir -G Ninja -DCMAKE_BUILD_TYPE=$BuildType $($Args -join " ")"
 		wsl -- cmake -S . -B $BuildDir -G Ninja "-DCMAKE_BUILD_TYPE=$BuildType" @Args
 	}
 	echo "cmake --build $BuildDir $($Verbose ? "--verbose" : $null)"
-	wsl -- cmake --build $BuildDir $($Verbose ? "--verbose" : $null)
+	wsl -- cmake --build $BuildDir $($Verbose ? "--verbose" : $null) @TargetArgs
 }
 
 function Sleep-Computer {

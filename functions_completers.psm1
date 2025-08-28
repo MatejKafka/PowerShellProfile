@@ -13,6 +13,8 @@ $Flags = [System.Reflection.BindingFlags]"Instance, NonPublic"
 $Context = $ExecutionContext.GetType().GetField("_context", $Flags).GetValue($ExecutionContext)
 $NativeProp = $Context.GetType().GetProperty("NativeArgumentCompleters", $Flags)
 
+### Set a completer for command `$CommandName` that loads another pwsh module when invoked for the first time.
+### The specified module should use `Register-ArgumentCompleter` to register the actual completer when it is loaded.
 function Set-SubstituteCompleter($CommandName, $CompleterModuleName) {
     $Context = $script:Context
     $NativeProp = $script:NativeProp

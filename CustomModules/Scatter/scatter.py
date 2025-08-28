@@ -15,7 +15,8 @@ title = None
 x_label = None
 y_label = None
 start_y_at_zero = False
-opts, args = getopt.getopt(sys.argv[1:], 'lp0t:x:y:')
+force_legend_off = False
+opts, args = getopt.getopt(sys.argv[1:], 'Llp0t:x:y:')
 for o, a in opts:
     if o == '-p': marker = ''
     if o == '-l': marker += '-'
@@ -23,6 +24,7 @@ for o, a in opts:
     if o == '-x': x_label = a
     if o == '-y': y_label = a
     if o == '-0': start_y_at_zero = True
+    if o == '-L': force_legend_off = True
 
 
 show_legend = False
@@ -50,6 +52,9 @@ for line in sys.stdin:
     x.append(vals[0])
     y.append(vals[1])
   i += 1
+
+if force_legend_off:
+  show_legend = False
 
 if len(x) > 0:
   plt.plot(x, y, marker, label=data_label)
