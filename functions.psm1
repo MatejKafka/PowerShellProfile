@@ -23,10 +23,13 @@ Set-Alias o Open-TextFile
 
 $global:PSDefaultParameterValues["Launch-VsDevShell.ps1:Arch"] = "amd64"
 $global:PSDefaultParameterValues["Launch-VsDevShell.ps1:SkipAutomaticLocation"] = $true
-"C:\Program Files", "C:\Program Files (x86)" `
-	| % {gi "$_\Microsoft Visual Studio\2022\*\Common7\Tools\Launch-VsDevShell.ps1" -ErrorAction Ignore} `
-	| select -First 1 `
-	| % {Set-Alias msvc $_.FullName}
+"C:\Program Files", "C:\Program Files (x86)"
+	| % {gi "$_\Microsoft Visual Studio\*\*\Common7\Tools\Launch-VsDevShell.ps1" -ErrorAction Ignore}
+	| % {
+		$Version = ($_ -split "\\")[3]
+		Set-Alias msvc$Version $_
+	}
+Set-Alias msvc msvc18
 
 
 function .. {
