@@ -7,6 +7,7 @@ Set-PSReadLineKeyHandler -Key Shift+UpArrow -Function HistorySearchBackward
 Set-PSReadLineKeyHandler -Key Shift+DownArrow -Function HistorySearchForward
 # bypass custom Enter handling below
 Set-PSReadLineKeyHandler -Key Alt+Enter -Function AcceptLine
+Set-PSReadLineKeyHandler -Key Ctrl+Spacebar -Function TabCompleteNext
 
 Set-PSReadLineOption -HistorySearchCursorMovesToEnd
 # disable default history handler, which filters "sensitive" commands from being written to the history file

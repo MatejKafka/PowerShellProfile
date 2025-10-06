@@ -65,11 +65,14 @@ function touch {
 
 function gits {git status @Args}
 function gita {git add @Args}
+function gitap {git add -p @Args}
 function gitd {git diff @Args}
 function gitdc {git diff --cached @Args}
 function gitl {git log @Args}
 function gitp {git push @Args}
-function gitpf {git push --force}
+function gitpf {git push --force @Args}
+function gitc {git commit @Args}
+function gitcm {git commit -m @Args}
 
 function gitri($Commit) {
 	if (-not $Commit) {
@@ -688,28 +691,24 @@ function FixCommandCasing($Ast) {
 		| % {
 			# Get-Command does not have any way to pass "literal string" without interpreting wildcards
 			$Cmd = Get-Command ([WildcardPattern]::Escape($_.Value)) -ErrorAction Ignore
-			if (-not $Cmd) {return}
+			if (-not $Cmd) {
+				return
+			}
 
 			# probably not 100% right, but hopefully close enough
 			$IsPath = $Cmd.CommandType -in "Application", "ExternalScript" -and ($_.Value.Contains("/") -or $_.Value.Contains("\"))
-
 			if ($IsPath) {
-				# resolve relative paths to absolute paths, with correct casing
-				$CorrectCasing = $Cmd.Source
-				if ($CorrectCasing -notmatch '^[\p{L}0-9_/\\:-]+$') {
-					# possibly needs quoting (the pattern is probably not entirely correct)
-					$CorrectCasing = "& '" + $Cmd.Source.Replace("'", "''") + "'"
-				}
-			} else {
-				# for command names in PATH/modules, just fix casing
-				$CorrectCasing = $Cmd.Name
+				return
+			}
 
-				foreach ($Ext in ".exe", ".ps1") {
-					if ($CorrectCasing -like "*$Ext" -and $_.Value -notlike "*$Ext") {
-						# .exe/.ps1 is added for native applications/scripts by Get-Command, remove it
-						$CorrectCasing = $CorrectCasing.Substring(0, $CorrectCasing.Length - $Ext.Length)
-						break
-					}
+			# for command names in PATH/modules, fix casing
+			$CorrectCasing = $Cmd.Name
+
+			foreach ($Ext in ".exe", ".ps1") {
+				if ($CorrectCasing -like "*$Ext" -and $_.Value -notlike "*$Ext") {
+					# .exe/.ps1 is added for native applications/scripts by Get-Command, remove it
+					$CorrectCasing = $CorrectCasing.Substring(0, $CorrectCasing.Length - $Ext.Length)
+					break
 				}
 			}
 
