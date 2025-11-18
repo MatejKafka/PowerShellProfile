@@ -32,12 +32,12 @@ function Out-ScatterPlot {
 	}
 
 	process {
-		$Index = $_ | select Index | % Index
-		$Value = $_ | select Item | % Item
+		$Index = ($_ | select Index | % Index) ?? ($_ | select X | % X)
+		$Value = ($_ | select Item | % Item) ?? ($_ | select Y | % Y)
 		if ($null -ne $Index -and $null -ne $Value) {
-			$Pipeline.Process("$Index,$Value")
+			$Pipeline.Process((@($Index, $Value) | ConvertTo-Json -Compress))
 		} else {
-			$Pipeline.Process([string]$_)
+			$Pipeline.Process(($_ | ConvertTo-Json -Compress))
 		}
 	}
 

@@ -6,9 +6,11 @@ either `x, y` or `y` with x auto-incremented) and displays a pyplot graph.
 """
 
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import sys
-import re
 import getopt
+import json
+import datetime
 
 marker = '.'
 title = None
@@ -31,6 +33,7 @@ show_legend = False
 x = []
 y = []
 data_label = None
+has_date = False
 
 i = 0
 for line in sys.stdin:
@@ -44,14 +47,21 @@ for line in sys.stdin:
     show_legend = True
     continue
 
-  vals = [float(n.strip()) for n in line.split(",")]
-  if len(vals) == 1:
-    x.append(i)
-    y.append(vals[0])
+  vals = json.loads(line)
+  if isinstance(vals, list) and len(vals) == 2:
+    key, value = vals
   else:
-    x.append(vals[0])
-    y.append(vals[1])
+    key, value = i, vals
   i += 1
+
+  try:
+    key = datetime.datetime.fromisoformat(key)
+    has_date = True
+  except:
+    pass
+
+  x.append(key)
+  y.append(value)
 
 if force_legend_off:
   show_legend = False
@@ -67,6 +77,14 @@ plt.title(title)
 plt.xlabel(x_label)
 plt.ylabel(y_label)
 
-plt.minorticks_on()
+if has_date:
+  locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
+  formatter = mdates.ConciseDateFormatter(locator)
+  ax = plt.gca()
+  ax.xaxis.set_major_locator(locator)
+  ax.xaxis.set_major_formatter(formatter)
+else:
+  plt.minorticks_on()
+
 plt.grid(which='both', color='#eee')
 plt.show()
